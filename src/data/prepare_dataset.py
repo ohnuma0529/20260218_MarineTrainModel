@@ -1,10 +1,17 @@
 import os
+import sys
 import cv2
 import numpy as np
 import glob
 from tqdm import tqdm
 import shutil
 import argparse
+from pathlib import Path
+
+# Add project root to sys.path
+project_root = str(Path(__file__).resolve().parents[2])
+if project_root not in sys.path:
+    sys.path.append(project_root)
 from ultralytics import SAM
 from src.utils.download_weights import ensure_sam2
 
