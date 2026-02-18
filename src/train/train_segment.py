@@ -32,7 +32,7 @@ def main():
         imgsz=args.imgsz,
         batch=args.batch,
         device=args.device,
-        project=args.project,
+        project=os.path.abspath(args.project),
         name=args.name,
         patience=30,
         task='segment'

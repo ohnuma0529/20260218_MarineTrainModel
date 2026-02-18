@@ -6,42 +6,65 @@ import yaml
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train Fish Detection Model (B1: All-in-One)")
-    parser.add_argument("--data_dir", type=str, default="data/detect_dataset", help="Dataset directory")
-    parser.add_argument("--model", type=str, default="yolo12n.pt", help="Pretrained model weight")
-    parser.add_argument("--imgsz", type=int, default=1024, help="Image size")
-    parser.add_argument("--epochs", type=int, default=300, help="Number of epochs")
-    parser.add_argument("--batch", type=int, default=8, help="Batch size")
-    parser.add_argument("--device", type=str, default="0", help="Device (0, 1, or 'cpu')")
-    parser.add_argument("--project", type=str, default="results/detect", help="Project name")
-    parser.add_argument("--name", type=str, default="b1_all_in_one", help="Run name")
+    parser.add_argument("--config", type=str, default="configs/detect_config.yaml", help="Path to config YAML")
+    parser.add_argument("--data_dir", type=str, help="Dataset directory (overrides config)")
+    parser.add_argument("--model", type=str, help="Pretrained model weight (overrides config)")
+    parser.add_argument("--epochs", type=int, help="Number of epochs (overrides config)")
+    parser.add_argument("--batch", type=int, help="Batch size (overrides config)")
+    parser.add_argument("--device", type=str, help="Device (overrides config)")
+    parser.add_argument("--name", type=str, help="Run name (overrides config)")
     return parser.parse_args()
 
-def gather_images(data_dir, subdirs):
+def load_config(config_path):
+    if not os.path.exists(config_path):
+        return {}
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
+
+def gather_images(data_dir, subdirs, exclude_list=None):
     images = []
+    exclude_set = set(exclude_list) if exclude_list else set()
     for sd in subdirs:
         path = Path(data_dir) / sd / "images"
         if path.exists():
-            images.extend([str(img.absolute()) for img in path.glob("*") if img.suffix.lower() in [".jpg", ".png", ".jpeg"]])
+            for img in path.glob("*"):
+                if img.suffix.lower() in [".jpg", ".png", ".jpeg"]:
+                    abs_path = str(img.absolute())
+                    if abs_path not in exclude_set:
+                        images.append(abs_path)
     return images
 
-def create_temp_yaml(images, nc=1, names=["fish"]):
-    import tempfile
-    data = {
-        "train": images,  # List of paths or path to txt
-        "val": images[:max(1, int(len(images)*0.1))], # Simple split for val
-        "nc": nc,
-        "names": names
-    }
-    # For YOLO train, it's better to save lists to txt files
+def read_split_file(file_path):
+    if not file_path:
+        return []
+    # Relative path support: if not absolute, assume relative to project root (CWD)
+    abs_path = os.path.abspath(file_path)
+    if not os.path.exists(abs_path):
+        print(f"Warning: Split file not found at {abs_path}")
+        return []
+    
+    with open(abs_path, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
+        # Each line in split file might also be relative
+        results = []
+        for line in lines:
+            if os.path.isabs(line):
+                results.append(line)
+            else:
+                # Resolve relative to project root
+                results.append(os.path.abspath(line))
+        return results
+
+def create_temp_yaml(train_images, val_images, nc=1, names=["fish"]):
     tmp_dir = Path("tmp_splits")
     tmp_dir.mkdir(exist_ok=True)
     train_txt = tmp_dir / "train.txt"
     val_txt = tmp_dir / "val.txt"
     
     with open(train_txt, 'w') as f:
-        f.write("\n".join(images))
+        f.write("\n".join(train_images))
     with open(val_txt, 'w') as f:
-        f.write("\n".join(data["val"]))
+        f.write("\n".join(val_images))
         
     yaml_data = {
         "train": str(train_txt.absolute()),
@@ -56,32 +79,55 @@ def create_temp_yaml(images, nc=1, names=["fish"]):
 
 def main():
     args = parse_args()
-    subdirs = ['1_auto_fish', '2_FIB', '3_fish_tray', '4_local', '5_syn']
+    config = load_config(args.config)
     
-    print(f"Gathering images from {subdirs} in {args.data_dir}...")
-    all_images = gather_images(args.data_dir, subdirs)
-    print(f"Total images found: {len(all_images)}")
+    # Extract data config
+    data_cfg = config.get("data", {})
+    data_dir = args.data_dir or data_cfg.get("data_dir", "data/detect_dataset")
+    subdirs = data_cfg.get("subdirs", ['1_auto_fish', '2_FIB', '3_fish_tray', '4_local', '5_syn'])
+    test_split_file = data_cfg.get("test_split_file")
     
-    if not all_images:
-        print("Error: No images found. Check your data_dir.")
+    # Extract train params
+    train_cfg = config.get("train_params", {})
+    model_path = args.model or train_cfg.get("model", "weights/yolo12n.pt")
+    epochs = args.epochs or train_cfg.get("epochs", 300)
+    batch = args.batch or train_cfg.get("batch", 8)
+    device = args.device or train_cfg.get("device", "0")
+    project = train_cfg.get("project", "results/detect")
+    name = args.name or train_cfg.get("name", "b1_all_in_one")
+    imgsz = train_cfg.get("imgsz", 1024)
+
+    # 1. Load test split (Validation/Test data)
+    val_images = read_split_file(test_split_file)
+    print(f"Loaded {len(val_images)} images for validation from {test_split_file}")
+
+    # 2. Gather training images (excluding val_images)
+    print(f"Gathering images from {subdirs} in {data_dir}...")
+    train_images = gather_images(data_dir, subdirs, exclude_list=val_images)
+    print(f"Total training images found: {len(train_images)}")
+    
+    if not train_images:
+        print("Error: No training images found. Check your data_dir and subdirs.")
         return
 
-    yaml_path = create_temp_yaml(all_images)
+    # 3. Create YAML
+    yaml_path = create_temp_yaml(train_images, val_images)
     print(f"Created temporary training config: {yaml_path}")
 
-    model = YOLO(args.model)
+    # 4. Run Training
+    model = YOLO(model_path)
     print(f"Starting training (B1 mode)...")
     model.train(
         data=str(yaml_path),
-        epochs=args.epochs,
-        imgsz=args.imgsz,
-        batch=args.batch,
-        device=args.device,
-        project=args.project,
-        name=args.name,
+        epochs=epochs,
+        imgsz=imgsz,
+        batch=batch,
+        device=device,
+        project=os.path.abspath(project),
+        name=name,
         patience=30
     )
-    print(f"Training finished. Results saved to {args.project}/{args.name}")
+    print(f"Training finished. Results saved to {project}/{name}")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,25 @@
+# Detection Training Configuration
+
+# データの取得設定
+data:
+  data_dir: "data/detect_dataset"
+  # 学習対象とするサブディレクトリ（data_dirからの相対パス）
+  subdirs:
+    - "1_auto_fish"
+    - "2_FIB"
+    - "3_fish_tray"
+    - "4_local"
+    - "5_syn"
+  # 訓練データから除外し、バリデーション/テスト用として使用する画像リスト
+  test_split_file: "data/detect_dataset/splits/local_test.txt"
+
+# 訓練パラメータ
+train_params:
+  model: "weights/yolo12n.pt"  # weightsフォルダ配下の重みを使用
+  imgsz: 1024
+  epochs: 300
+  batch: 8
+  device: "0"
+  project: "results/detect"
+  name: "b1_all_in_one"
+  patience: 30

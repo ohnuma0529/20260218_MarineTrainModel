@@ -28,7 +28,7 @@ def main():
         imgsz=args.imgsz,
         device=args.device,
         save=True,
-        project=str(output_dir.parent),
+        project=os.path.abspath(output_dir.parent),
         name=output_dir.name,
         exist_ok=True
     )
