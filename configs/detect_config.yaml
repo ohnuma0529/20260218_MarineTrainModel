@@ -11,7 +11,7 @@ data:
     - "4_local"
     - "5_syn"
   # 訓練データから除外し、バリデーション/テスト用として使用する画像リスト
-  test_split_file: "data/detect_dataset/splits/local_test.txt"
+  test_split_file: "data/splits/local_test.txt"
 
 # 訓練パラメータ
 train_params:

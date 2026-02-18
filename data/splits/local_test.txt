@@ -1,0 +1,11 @@
+data/detect_dataset/4_local/images/7854dd58ef664fe297dc4db7b9599d55.png
+data/detect_dataset/4_local/images/208be44cdabf4c6c867c9d01aadf09ed.png
+data/detect_dataset/4_local/images/3d4f7cfe53f44a6c9fd17533dd189720.png
+data/detect_dataset/4_local/images/1bb35b33f2f44a5c883c4e6693d7cab0.png
+data/detect_dataset/4_local/images/a836d3f96277423f8fad59ca6bc88811.png
+data/detect_dataset/4_local/images/6965fa722cb14d62957b43965bb1991e.png
+data/detect_dataset/4_local/images/7e49d30f0146430ca69cfe89c3ff92e9.png
+data/detect_dataset/4_local/images/86905b6a709d4582bd7ebabd80fcf652.png
+data/detect_dataset/4_local/images/011bf1bdfb2e4b089faa04641641c9a7.png
+data/detect_dataset/4_local/images/8ccf31ef871f4066b75aea5ccb62bad0.png
+data/detect_dataset/4_local/images/59a1e240853743649414b3e9a7ec4507.png
