@@ -2,6 +2,7 @@ import os
 import argparse
 from pathlib import Path
 from ultralytics import YOLO
+from src.utils.download_weights import ensure_yolo11n_seg, ensure_yolo12n
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train Fish Segmentation Model (YOLO-Seg)")
@@ -21,6 +22,13 @@ def main():
     if not os.path.exists(args.data_yaml):
         print(f"Error: dataset.yaml not found at {args.data_yaml}")
         return
+
+    # Ensure weights exist
+    if args.model == "yolo11n-seg.pt":
+        ensure_yolo11n_seg()
+    elif args.model == "yolo12n-seg.pt":
+        # Note: yolo12n-seg is not in the automatic map yet, but we check common ones
+        pass
 
     # Initialize YOLO segmentation model
     model = YOLO(args.model)

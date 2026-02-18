@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from ultralytics import YOLO
 import yaml
+from src.utils.download_weights import ensure_yolo12n, ensure_yolo11n_seg, ensure_sam2
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train Fish Detection Model (B1: All-in-One)")
@@ -79,6 +80,14 @@ def create_temp_yaml(train_images, val_images, nc=1, names=["fish"]):
 
 def main():
     args = parse_args()
+    
+    # Ensure weights exist
+    if args.model == "yolo12n.pt":
+        ensure_yolo12n()
+    elif args.model == "yolo11n-seg.pt":
+        ensure_yolo11n_seg()
+
+    # Initialize YOLO model
     config = load_config(args.config)
     
     # Extract data config

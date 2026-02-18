@@ -6,6 +6,7 @@ from tqdm import tqdm
 import shutil
 import argparse
 from ultralytics import SAM
+from src.utils.download_weights import ensure_sam2
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare dataset for Fish Detection (Detection & Segmentation)")
@@ -166,7 +167,12 @@ def main():
     if os.path.exists(args.output_dir): shutil.rmtree(args.output_dir)
     create_dir_structure(args.output_dir, open_ds + local_ds)
     
-    sam_model = SAM(args.sam_model) if any(local_ds) else None
+    if any(local_ds):
+        if args.sam_model == "sam2_b.pt":
+            ensure_sam2()
+        sam_model = SAM(args.sam_model)
+    else:
+        sam_model = None
     
     for ds in open_ds:
         process_dataset(ds, args.root_dir, args.output_dir, False, args)

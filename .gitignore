@@ -8,6 +8,6 @@ __pycache__/
 /outputs/
 /results/
 /runs/
-*.pt
+/weights/sam2_b.pt
 *.onnx
 .env
